@@ -23,7 +23,7 @@ A production-ready Lead Management System built with **Hexagonal Architecture** 
 ### Technical Highlights
 - **Hexagonal Architecture** - Clean separation of domain, application, and infrastructure
 - **Domain-Driven Design** - Rich domain models with encapsulated business logic
-- **Strategy Pattern** - Pluggable scoring rules and notification adapters
+- **Design Patterns** - Strategy, Factory, Builder, Adapter, Decorator, Repository
 - **Circuit Breaker Pattern** - Fault tolerance for external services
 - **Thread-Safe** - Concurrent access support with atomic operations
 - **185 Unit Tests** - 95.4% code coverage
@@ -220,6 +220,202 @@ mvn test jacoco:report
 | **Total Bonus** | | **+20** |
 
 **Grand Total: 120 points** 🏆
+
+## 🎨 Design Patterns
+
+This project demonstrates the following **Gang of Four** and modern design patterns:
+
+### 1. Strategy Pattern
+**Purpose:** Define a family of algorithms, encapsulate each one, and make them interchangeable.
+
+| Interface | Implementations | Usage |
+|-----------|-----------------|-------|
+| `ScoringRule` | `SourceQualityRule`, `VehicleAgeRule`, `TradeInValueRule`, `EngagementRule`, `RecencyRule` | Pluggable scoring criteria |
+| `NotificationPort` | `SmsNotificationAdapter`, `EmailNotificationAdapter`, `TwilioSmsAdapter` | Interchangeable notification channels |
+
+```java
+// Strategy Pattern - Add new scoring rules without modifying engine
+List<ScoringRule> rules = List.of(
+    new SourceQualityRule(),    // Strategy 1
+    new VehicleAgeRule(),       // Strategy 2
+    new TradeInValueRule(),     // Strategy 3
+    new EngagementRule(),       // Strategy 4
+    new RecencyRule()           // Strategy 5
+);
+LeadScoringEngine engine = new LeadScoringEngine(rules);
+```
+
+### 2. Factory Pattern
+**Purpose:** Provide an interface for creating objects without specifying their concrete classes.
+
+| Factory Method | Class | Purpose |
+|----------------|-------|---------|
+| `Lead.newLead(...)` | `Lead` | Creates validated lead with UUID and timestamps |
+| `NotificationResult.success(...)` | `NotificationResult` | Creates success result |
+| `NotificationResult.failure(...)` | `NotificationResult` | Creates failure result |
+| `Notification.sms(...)` | `Notification` | Creates SMS notification |
+| `Notification.email(...)` | `Notification` | Creates Email notification |
+
+```java
+// Factory Pattern - Encapsulates object creation with validation
+Lead lead = Lead.newLead(
+    "dealer-1", "tenant-1", "site-1",
+    "John", "Doe", email, phone, LeadSource.WEBSITE, vehicle
+);  // Auto-generates UUID, sets state=NEW, timestamps
+
+// Factory methods for results
+NotificationResult result = NotificationResult.success("twilio", "msg-123");
+NotificationResult error = NotificationResult.failure("twilio", "Connection timeout");
+
+// Factory methods for notifications
+Notification sms = Notification.sms("dealer-1", "tenant-1", "site-1",
+                                    "lead-123", "Hello!", "+14155550123");
+```
+
+### 3. Builder Pattern
+**Purpose:** Separate the construction of a complex object from its representation.
+
+| Class | Builder Type | Usage |
+|-------|--------------|-------|
+| `Lead` | Lombok `@Builder` | Flexible lead construction |
+| `AuditEntry` | Lombok `@Builder` | Build audit records |
+| `ScoringResult` | Lombok `@Builder` | Build scoring results |
+| `Notification` | Manual Builder | Build notifications with fluent API |
+
+```java
+// Builder Pattern - Fluent API for complex object construction
+Lead lead = Lead.builder()
+    .dealerId("dealer-1")
+    .tenantId("tenant-1")
+    .firstName("John")
+    .lastName("Doe")
+    .email(new Email("john@example.com"))
+    .phone(new PhoneCoordinate("+1", "4155550123"))
+    .source(LeadSource.WEBSITE)
+    .state(LeadState.NEW)
+    .build();
+
+// Manual builder for Notification
+Notification notification = Notification.builder()
+    .dealerId("dealer-1")
+    .tenantId("tenant-1")
+    .siteId("site-1")
+    .leadId("lead-123")
+    .type(NotificationType.SMS)
+    .body("Thank you for your interest!")
+    .to("+14155550123")
+    .build();
+```
+
+### 4. Adapter Pattern
+**Purpose:** Convert the interface of a class into another interface clients expect.
+
+| Adapter | Adaptee | Target Interface |
+|---------|---------|------------------|
+| `TwilioSmsAdapter` | Twilio Verify API | `NotificationPort` |
+| `EmailNotificationAdapter` | Email Service | `NotificationPort` |
+| `InMemoryLeadRepository` | `ConcurrentHashMap` | `LeadPersistencePort` |
+
+```java
+// Adapter Pattern - Adapts Twilio API to our NotificationPort interface
+public class TwilioSmsAdapter implements NotificationPort {
+    @Override
+    public NotificationResult send(Notification notification) {
+        // Adapts our Notification to Twilio's Verification API
+        Verification.creator(serviceSid, notification.getTo(), "sms").create();
+        return NotificationResult.success("twilio", verificationSid);
+    }
+}
+```
+
+### 5. Decorator Pattern
+**Purpose:** Attach additional responsibilities to an object dynamically.
+
+| Decorator | Component | Added Behavior |
+|-----------|-----------|----------------|
+| `CircuitBreakerNotificationAdapter` | `NotificationPort` | Fault tolerance |
+
+```java
+// Decorator Pattern - Wraps adapter with circuit breaker behavior
+NotificationPort twilioAdapter = new TwilioSmsAdapter(config);
+CircuitBreaker breaker = new CircuitBreaker("twilio", 3, Duration.ofSeconds(30));
+
+// Decorated adapter adds circuit breaker without modifying original
+NotificationPort resilientAdapter = new CircuitBreakerNotificationAdapter(twilioAdapter, breaker);
+```
+
+### 6. Repository Pattern
+**Purpose:** Mediates between the domain and data mapping layers using a collection-like interface.
+
+| Repository | Storage | Domain Entity |
+|------------|---------|---------------|
+| `InMemoryLeadRepository` | `ConcurrentHashMap` | `Lead` |
+
+```java
+// Repository Pattern - Collection-like interface for persistence
+public interface LeadPersistencePort {
+    Lead save(Lead lead);
+    Optional<Lead> findByIdAndDealerId(String leadId, String dealerId);
+    List<Lead> findByDealerIdAndState(String dealerId, LeadState state);
+    List<Lead> findByDealerIdOrderByScore(String dealerId, int limit);
+}
+```
+
+### 7. State Pattern
+**Purpose:** Allow an object to alter its behavior when its internal state changes.
+
+| State | Allowed Transitions |
+|-------|---------------------|
+| `NEW` | → CONTACTED, LOST |
+| `CONTACTED` | → QUALIFIED, LOST |
+| `QUALIFIED` | → CONVERTED, LOST |
+| `CONVERTED` | (terminal) |
+| `LOST` | (terminal) |
+
+```java
+// State Pattern - LeadState controls valid transitions
+public enum LeadState {
+    NEW(Set.of(CONTACTED, LOST)),
+    CONTACTED(Set.of(QUALIFIED, LOST)),
+    QUALIFIED(Set.of(CONVERTED, LOST)),
+    CONVERTED(Set.of()),  // Terminal
+    LOST(Set.of());       // Terminal
+
+    public boolean canTransitionTo(LeadState target) {
+        return allowedTransitions.contains(target);
+    }
+}
+```
+
+### 8. Value Object Pattern (DDD)
+**Purpose:** Immutable objects that represent a descriptive aspect of the domain.
+
+| Value Object | Attributes | Validation |
+|--------------|------------|------------|
+| `Email` | `value` | Format validation |
+| `PhoneCoordinate` | `countryCode`, `number` | E.164 formatting |
+| `VehicleInterest` | `make`, `model`, `year`, `tradeInValue` | Year/value ranges |
+| `AuditEntry` | `fromState`, `toState`, `actor`, `timestamp` | Immutable record |
+
+```java
+// Value Objects - Immutable with validation
+Email email = new Email("customer@example.com");     // Validates format
+PhoneCoordinate phone = new PhoneCoordinate("+1", "4155550123");
+String e164 = phone.toE164();  // Returns "+14155550123"
+```
+
+### Design Pattern Summary
+
+| Pattern | Location | Benefit |
+|---------|----------|---------|
+| **Strategy** | `ScoringRule`, `NotificationPort` | Open/Closed principle - add rules/channels without modification |
+| **Factory** | `Lead.newLead()`, `NotificationResult.success/failure()`, `Notification.sms/email()` | Encapsulated creation with validation |
+| **Builder** | `Lead`, `AuditEntry`, `ScoringResult`, `Notification` | Fluent API for complex objects |
+| **Adapter** | `TwilioSmsAdapter`, `EmailNotificationAdapter` | Integrate external services |
+| **Decorator** | `CircuitBreakerNotificationAdapter` | Add resilience without modifying adapters |
+| **Repository** | `LeadPersistencePort` | Abstract storage implementation |
+| **State** | `LeadState` | Enforce valid state transitions |
+| **Value Object** | `Email`, `PhoneCoordinate`, `VehicleInterest` | Domain integrity with immutability |
 
 ## 🛣️ Roadmap
 
