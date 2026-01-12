@@ -4,7 +4,7 @@ A production-ready Lead Management System built with **Hexagonal Architecture** 
 
 [![Java](https://img.shields.io/badge/Java-17-blue.svg)](https://openjdk.java.net/projects/jdk/17/)
 [![Build](https://img.shields.io/badge/Build-Maven-green.svg)](https://maven.apache.org/)
-[![Tests](https://img.shields.io/badge/Tests-164%20Passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-185%20Passing-brightgreen.svg)]()
 [![Coverage](https://img.shields.io/badge/Coverage-95.4%25-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Hexagonal-purple.svg)]()
 
@@ -26,7 +26,7 @@ A production-ready Lead Management System built with **Hexagonal Architecture** 
 - **Strategy Pattern** - Pluggable scoring rules and notification adapters
 - **Circuit Breaker Pattern** - Fault tolerance for external services
 - **Thread-Safe** - Concurrent access support with atomic operations
-- **164 Unit Tests** - 95.4% code coverage
+- **185 Unit Tests** - 95.4% code coverage
 
 ## 🚀 Quick Start
 
@@ -149,7 +149,7 @@ src/
 │   └── bootstrap/                 # Application entry point
 │       └── Main.java
 │
-└── test/java/                     # 164 unit tests (95.4% coverage)
+└── test/java/                     # 185 unit tests (95.4% coverage)
 ```
 
 ## 🔧 Configuration
@@ -191,7 +191,8 @@ mvn test jacoco:report
 | Domain - Scoring | 3 | 37 |
 | Adapters | 3 | 32 |
 | Application | 4 | 35 |
-| **Total** | **17** | **164** |
+| Integration | 1 | 21 |
+| **Total** | **18** | **185** |
 
 ### Coverage Metrics
 - **Instruction Coverage**: 95.4% (1745/1829)
