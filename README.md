@@ -37,8 +37,8 @@ A production-ready Lead Management System built with **Hexagonal Architecture** 
 ### Build & Test
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd lead-management
+git clone https://github.com/Pallav46/Lead-Management.git
+cd Lead-Management
 
 # Build and run tests
 mvn clean test
