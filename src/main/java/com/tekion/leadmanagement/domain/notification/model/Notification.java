@@ -140,4 +140,133 @@ public class Notification {
     private static boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
     }
+
+    // ════════════════════════════════════════════════════════════════
+    // FACTORY METHODS
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Factory method to create an SMS notification.
+     *
+     * @param dealerId  Dealership identifier
+     * @param tenantId  Tenant identifier
+     * @param siteId    Site identifier
+     * @param leadId    Lead identifier for rate limiting
+     * @param body      SMS message content
+     * @param phoneE164 Phone number in E.164 format (e.g., "+14155550123")
+     * @return A new SMS Notification instance
+     */
+    public static Notification sms(String dealerId, String tenantId, String siteId,
+                                   String leadId, String body, String phoneE164) {
+        return new Notification(dealerId, tenantId, siteId, leadId,
+                NotificationType.SMS, null, body, phoneE164);
+    }
+
+    /**
+     * Factory method to create an Email notification.
+     *
+     * @param dealerId Dealership identifier
+     * @param tenantId Tenant identifier
+     * @param siteId   Site identifier
+     * @param leadId   Lead identifier for rate limiting
+     * @param subject  Email subject line
+     * @param body     Email body content
+     * @param email    Recipient email address
+     * @return A new Email Notification instance
+     */
+    public static Notification email(String dealerId, String tenantId, String siteId,
+                                     String leadId, String subject, String body, String email) {
+        return new Notification(dealerId, tenantId, siteId, leadId,
+                NotificationType.EMAIL, subject, body, email);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // BUILDER PATTERN
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Returns a new Builder for constructing Notification instances.
+     *
+     * <p>Example usage:
+     * <pre>
+     * Notification notification = Notification.builder()
+     *     .dealerId("dealer-1")
+     *     .tenantId("tenant-1")
+     *     .siteId("site-1")
+     *     .leadId("lead-123")
+     *     .type(NotificationType.SMS)
+     *     .body("Hello!")
+     *     .to("+14155550123")
+     *     .build();
+     * </pre>
+     *
+     * @return A new Builder instance
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * Builder class for constructing Notification instances with a fluent API.
+     */
+    public static class Builder {
+        private String dealerId;
+        private String tenantId;
+        private String siteId;
+        private String leadId;
+        private NotificationType type;
+        private String subject;
+        private String body;
+        private String to;
+
+        public Builder dealerId(String dealerId) {
+            this.dealerId = dealerId;
+            return this;
+        }
+
+        public Builder tenantId(String tenantId) {
+            this.tenantId = tenantId;
+            return this;
+        }
+
+        public Builder siteId(String siteId) {
+            this.siteId = siteId;
+            return this;
+        }
+
+        public Builder leadId(String leadId) {
+            this.leadId = leadId;
+            return this;
+        }
+
+        public Builder type(NotificationType type) {
+            this.type = type;
+            return this;
+        }
+
+        public Builder subject(String subject) {
+            this.subject = subject;
+            return this;
+        }
+
+        public Builder body(String body) {
+            this.body = body;
+            return this;
+        }
+
+        public Builder to(String to) {
+            this.to = to;
+            return this;
+        }
+
+        /**
+         * Builds the Notification instance with validation.
+         *
+         * @return A new validated Notification instance
+         * @throws IllegalArgumentException if required fields are missing
+         */
+        public Notification build() {
+            return new Notification(dealerId, tenantId, siteId, leadId, type, subject, body, to);
+        }
+    }
 }
